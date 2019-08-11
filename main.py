@@ -1,14 +1,8 @@
 # coding=utf-8
 import sys
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication
-from PyQt5.QtWidgets import QWidget, QFrame, QApplication, QLabel
-from PyQt5.QtGui import QPixmap
-import utils
-import cv2
-from wind import ObjectInfoView
+from PyQt5.QtWidgets import QWidget, QApplication, QLabel
 from controller import Controller
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import pyqtSignal
 from model import Model
 from PIL import Image
 
@@ -21,7 +15,7 @@ class ActionRe(QWidget):
         super(QWidget, self).__init__()
 
         self.__model = model
-        self.__model.imageChangedSignal.connect(self.getImage)
+        self.__model.dataChangedSignal.connect(self.getData)
 
         self.lb = QLabel(self)
         self.initUI()
@@ -33,12 +27,28 @@ class ActionRe(QWidget):
         self.lb.setStyleSheet("border: 0px")
         self.lb.setScaledContents(True)
 
-    def getImage(self, msg1, msg2):
-        print(555)
-        print("QSlot get msg => " + msg1+' '+msg2)
-        image = self.__model.getImage()
+    def getData(self):
+        '''响应model数据更新信号，更新界面
 
-        pix = Image.fromarray(image).toqpixmap()
+        :return: 无
+        '''
+        data = self.__model.getData()
+
+        self.updataUI(data)
+
+    def updataUI(self, data):
+        ''' 更新界面中的内容
+
+        :param data:{
+                    'img': ndarray(画上姿态的图片),
+                    'boundingBox': [ndarray(未画上姿态的框内图片)],
+                    'nameAndAction': [['葛某', '走']]
+                }
+        :return: 无
+        '''
+        img = data['img']
+
+        pix = Image.fromarray(img).toqpixmap()
         self.lb.setPixmap(pix)
 
 
@@ -49,9 +59,9 @@ if __name__ == '__main__':
     view = ActionRe(model)
     controller = Controller(model)
 
+    # 视图更新完成，通知controller
     view.initOkSignal.connect(controller.route)
     view.initOkSignal.emit("startTimer", None)
-    print(111)
 
     view.show()
     sys.exit(app.exec_())
